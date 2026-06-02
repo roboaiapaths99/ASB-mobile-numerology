@@ -1,36 +1,71 @@
-# Virtual Environment
-.venv/
-venv/
-env/
-
-# Python
+# ─── Python ───────────────────────────────────────────────
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
+*.py[cod]
+*$py.class
 *.so
 *.egg
 *.egg-info/
 dist/
 build/
+.eggs/
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Streamlit
-.streamlit/
+# Virtual environments
+backend/venv/
+backend/.venv/
+venv/
+.venv/
+env/
+ENV/
+.env.bak
 
-# IDE
+# ─── Environment / Secrets ────────────────────────────────
+.env
+.env.local
+.env.*.local
+backend/.env
+*.secret
+
+# ─── React / Node ─────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.cache/
+frontend/coverage/
+node_modules/
+
+# Vite build artifacts
+frontend/.vite/
+
+# ─── Logs ─────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── OS ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE ──────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS
-.DS_Store
-Thumbs.db
+# ─── Testing ──────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
 
-# Logs
-*.log
-
-# Environment variables
-.env
-.env.local
+# ─── Misc ─────────────────────────────────────────────────
+*.bak
+*.tmp
