@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, make_response
 from datetime import datetime
 import sys
 import os
-import jwt
+import requests as http_requests
 from functools import wraps
 from bson import ObjectId
 from pymongo import MongoClient
@@ -21,7 +21,7 @@ app = Flask(__name__)
 # Load config from env
 MONGODB_URI = os.getenv("MONGODB_URI")
 DB_NAME = os.getenv("DB_NAME", "asb_store")
-JWT_ACCESS_SECRET = os.getenv("JWT_ACCESS_SECRET", "dev_secret")
+MERN_AUTH_BASE_URL = os.getenv("MERN_AUTH_BASE_URL", "https://api.asbcrystal.in")
 ENABLE_CREDIT_SYSTEM = os.getenv("ENABLE_CREDIT_SYSTEM", "false").lower() == "true"
 
 # Initialize MongoDB client
@@ -50,6 +50,27 @@ def deduct_credits(user_id, cost=1):
     except Exception as e:
         print(f"Credit deduction error: {e}")
 
+def verify_token_with_mern(token):
+    """Validate token by calling the MERN auth service (api.asbcrystal.in).
+    Returns (user_id, error_message). user_id is None on failure."""
+    try:
+        resp = http_requests.get(
+            f"{MERN_AUTH_BASE_URL}/api/auth/me",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "X-Auth-Token": token,
+            },
+            timeout=8
+        )
+        data = resp.json()
+        if resp.status_code == 200 and data.get("success"):
+            user = data.get("user", {})
+            user_id = str(user.get("_id") or user.get("id") or "")
+            return user_id or "unknown", None
+        return None, data.get("message", "Unauthorized")
+    except Exception as e:
+        return None, f"Auth service unreachable: {e}"
+
 def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -62,31 +83,30 @@ def require_auth(f):
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
-        
+
         # 2. X-Auth-Token header
         if not token:
             token = request.headers.get("X-Auth-Token")
 
-        # Fallback bypass for testing/development if security bypass is on
         security_bypass = os.getenv("SECURITY_BYPASS", "0") == "1"
-        if not token and security_bypass:
-            # Inject dummy user
-            request.user_id = "000000000000000000000000"
-            return f(*args, **kwargs)
 
-        if not token:
+        # No token at all
+        if not token or token in ("null", "undefined"):
+            if security_bypass:
+                request.user_id = "000000000000000000000000"
+                return f(*args, **kwargs)
             return jsonify({"error": "Unauthorized: Access token is missing"}), 401
 
-        try:
-            payload = jwt.decode(token, JWT_ACCESS_SECRET, algorithms=["HS256"])
-            user_id = payload.get("sub") or payload.get("id")
-            if not user_id:
-                return jsonify({"error": "Unauthorized: Invalid token payload"}), 401
-            request.user_id = user_id
-        except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Unauthorized: Token expired"}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({"error": "Unauthorized: Invalid token"}), 401
+        # Validate token via MERN auth service
+        user_id, err = verify_token_with_mern(token)
+        if not user_id:
+            # If bypass is on, allow anyway (dev mode)
+            if security_bypass:
+                request.user_id = "000000000000000000000000"
+                return f(*args, **kwargs)
+            return jsonify({"error": f"Unauthorized: {err}"}), 401
+
+        request.user_id = user_id
 
         # Check credits if credit system is enabled
         if ENABLE_CREDIT_SYSTEM:
