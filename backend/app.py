@@ -168,8 +168,8 @@ def generate_consultation():
 
 if __name__ == '__main__':
     print("Starting ASB Numerology Backend API...")
-    print("API will be available at: http://localhost:5001")
+    print("API will be available at: http://localhost:5002")
     print("Registered routes:")
     for rule in app.url_map.iter_rules():
         print(f"  {rule}")
-    app.run(debug=False, host='0.0.0.0', port=5001, use_reloader=False)
+    app.run(debug=False, host='0.0.0.0', port=5002, use_reloader=False)
