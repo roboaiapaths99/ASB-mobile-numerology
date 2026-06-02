@@ -35,8 +35,9 @@ function App() {
         window.history.replaceState({}, document.title, newUrl);
       }
 
+      // No token → guest mode, don't redirect
       if (!token) {
-        redirectToLogin();
+        setAuthLoading(false);
         return;
       }
 
@@ -51,33 +52,31 @@ function App() {
         if (data.success) {
           setUser(data.user);
         } else {
-          logout();
+          // Invalid token — clear but stay in guest mode
+          localStorage.removeItem('token');
         }
       } catch (err) {
         console.error('Auth verification failed:', err);
-        logout();
+        // Network error — stay in guest mode
       } finally {
         setAuthLoading(false);
       }
-    };
-
-    const redirectToLogin = () => {
-      const currentUrl = window.location.origin + window.location.pathname;
-      window.location.href = `${MAIN_SITE_URL}/login?redirect=${encodeURIComponent(currentUrl)}`;
-    };
-
-    const logout = () => {
-      localStorage.removeItem('token');
-      redirectToLogin();
     };
 
     checkAuth();
   }, []);
 
   const handleConsultation = async (formData) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      localStorage.setItem('pending_mobile_consultation', JSON.stringify(formData));
+      const currentUrl = window.location.origin + window.location.pathname;
+      window.location.href = `${MAIN_SITE_URL}/login?redirect=${encodeURIComponent(currentUrl)}`;
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    const token = localStorage.getItem('token');
     
     try {
       const response = await fetch('/api/numerology/consultation', {
@@ -103,6 +102,21 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    if (user) {
+      const pending = localStorage.getItem('pending_mobile_consultation');
+      if (pending) {
+        try {
+          const pendingData = JSON.parse(pending);
+          localStorage.removeItem('pending_mobile_consultation');
+          handleConsultation(pendingData);
+        } catch (e) {
+          console.error('Failed to run pending mobile consultation:', e);
+        }
+      }
+    }
+  }, [user]);
+
   const handleLogoutAction = () => {
     localStorage.removeItem('token');
     const currentUrl = window.location.origin + window.location.pathname;
@@ -124,7 +138,7 @@ function App() {
           <a href={MAIN_SITE_URL} className="text-xs uppercase tracking-widest text-purple-600 font-bold hover:opacity-75 transition-opacity" style={{ textDecoration: 'none' }}>
             ← Back to Main Site
           </a>
-          {user && (
+          {user ? (
             <div className="flex items-center gap-4">
               <span className="text-sm font-semibold text-purple-950">Hi, {user.name || 'User'}</span>
               <button 
@@ -132,6 +146,16 @@ function App() {
                 className="text-xs font-bold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition-colors"
               >
                 Logout
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-semibold text-purple-950">Hi, Guest</span>
+              <button 
+                onClick={handleLogoutAction}
+                className="text-xs font-bold text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200 transition-colors"
+              >
+                Login
               </button>
             </div>
           )}
