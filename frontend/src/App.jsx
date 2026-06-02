@@ -35,8 +35,9 @@ function App() {
         window.history.replaceState({}, document.title, newUrl);
       }
 
-      // No token → guest mode, don't redirect
-      if (!token) {
+      // No token -> guest mode, don't redirect
+      if (!token || token === 'null' || token === 'undefined') {
+        localStorage.removeItem('token');
         setAuthLoading(false);
         return;
       }
@@ -68,7 +69,8 @@ function App() {
 
   const handleConsultation = async (formData) => {
     const token = localStorage.getItem('token');
-    if (!token) {
+    if (!token || token === 'null' || token === 'undefined') {
+      localStorage.removeItem('token');
       localStorage.setItem('pending_mobile_consultation', JSON.stringify(formData));
       const currentUrl = window.location.origin + window.location.pathname;
       window.location.href = `${MAIN_SITE_URL}/login?redirect=${encodeURIComponent(currentUrl)}`;
@@ -88,6 +90,17 @@ function App() {
         },
         body: JSON.stringify(formData),
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        setUser(null);
+        setError('Your session has expired. Redirecting to login...');
+        setTimeout(() => {
+          const currentUrl = window.location.origin + window.location.pathname;
+          window.location.href = `${MAIN_SITE_URL}/login?redirect=${encodeURIComponent(currentUrl)}`;
+        }, 1500);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error('Failed to generate consultation');
