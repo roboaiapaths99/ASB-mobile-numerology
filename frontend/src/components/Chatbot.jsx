@@ -159,7 +159,17 @@ const Chatbot = ({ user, token }) => {
         const saved = localStorage.getItem('asb_chat_history');
         const savedMode = localStorage.getItem('asb_chat_input_mode');
         const savedStep = localStorage.getItem('asb_chat_step');
-        if (saved) try { setMessages(JSON.parse(saved)); } catch (e) { /* */ }
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                setMessages(parsed.map(msg => ({
+                    ...msg,
+                    text: msg.text || ''
+                })));
+            } catch (e) {
+                console.error(e);
+            }
+        }
         if (savedMode) try { const m = JSON.parse(savedMode); setInputType(m.inputType || 'text'); setInputPlaceholder(m.inputPlaceholder || 'Type here...'); } catch (e) { /* */ }
         if (savedStep) try { setStepInfo(JSON.parse(savedStep)); } catch (e) { /* */ }
     }, []);
