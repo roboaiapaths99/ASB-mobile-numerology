@@ -4,6 +4,7 @@ import InputSection from './components/InputSection';
 import ResultsSection from './components/ResultsSection';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorMessage from './components/ErrorMessage';
+import Chatbot from './components/Chatbot';
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -182,6 +183,7 @@ function App() {
         
         {results && !loading && <ResultsSection results={results} />}
       </div>
+      <Chatbot user={user} token={localStorage.getItem('token')} />
     </div>
   );
 }
