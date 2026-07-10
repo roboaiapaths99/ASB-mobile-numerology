@@ -297,7 +297,7 @@ const Chatbot = ({ user, token }) => {
                                     {msg.sender === 'bot' && msg.step && msg.total_steps && msg.step <= msg.total_steps && (
                                         <span style={S.stepBadge}>Step {msg.step} of {msg.total_steps}</span>
                                     )}
-                                    <div style={S.bubble(msg.sender === 'user')} dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }}></div>
+                                    <div style={S.bubble(msg.sender === 'user')} dangerouslySetInnerHTML={{ __html: (msg.text || '').replace(/\n/g, '<br/>') }}></div>
                                     {msg.buttons && (
                                         <div style={S.btnWrap}>
                                             {msg.buttons.map((b, j) => (
